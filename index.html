@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SEO To-Do List App</title>
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #020617;
+        --card: #0f172a;
+        --accent: #6366f1;
+        --accent2: #9333ea;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: 'Inter', sans-serif;
+      }
+
+      body {
+        display: flex;
+        background:
+          radial-gradient(
+            circle at 20% 20%,
+            rgba(99, 102, 241, 0.3),
+            transparent
+          ),
+          radial-gradient(
+            circle at 80% 80%,
+            rgba(147, 51, 234, 0.3),
+            transparent
+          ),
+          var(--bg);
+        color: var(--text);
+      }
+
+      .sidebar {
+        width: 260px;
+        padding: 20px;
+        background: rgba(15, 23, 42, 0.9);
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
+      }
+
+      .sidebar h2 {
+        margin-bottom: 10px;
+      }
+
+      .sidebar input,
+      .sidebar button {
+        width: 100%;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        border: none;
+      }
+
+      .sidebar button {
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: white;
+        cursor: pointer;
+      }
+
+      .container {
+        flex: 1;
+        padding: 20px;
+        max-width: 900px;
+        margin: auto;
+      }
+
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+
+      .card {
+        background: rgba(15, 23, 42, 0.9);
+        padding: 16px;
+        border-radius: 16px;
+        margin-bottom: 16px;
+        backdrop-filter: blur(10px);
+      }
+
+      .todo-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #020617;
+        padding: 10px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+      }
+
+      .left {
+        display: flex;
+        align-items: center;
+      }
+
+      .todo-item input {
+        margin-right: 10px;
+      }
+
+      .completed {
+        text-decoration: line-through;
+        color: var(--muted);
+      }
+
+      .actions button {
+        margin-left: 5px;
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .progress-container {
+        margin-top: 20px;
+      }
+
+      .progress-bar {
+        height: 12px;
+        background: #1e293b;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      .progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        transition: 0.3s;
+      }
+
+      .progress-text {
+        text-align: center;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="sidebar">
+      <h2>Tambah Task</h2>
+      <input id="sectionInput" placeholder="Nama section" />
+      <input id="taskInput" placeholder="Nama task" />
+      <button onclick="addTask()">Tambah</button>
+    </div>
+
+    <div class="container">
+      <h1>SEO To-Do List</h1>
+      <div id="app"></div>
+
+      <div class="progress-container">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">0%</div>
+      </div>
+    </div>
+
+    <script>
+      let data = JSON.parse(localStorage.getItem('data')) || [
+        { title: 'Riset Keyword', tasks: ['Cari keyword', 'Keyword turunan'] },
+      ];
+
+      let state = JSON.parse(localStorage.getItem('state')) || {};
+
+      function save() {
+        localStorage.setItem('data', JSON.stringify(data));
+        localStorage.setItem('state', JSON.stringify(state));
+      }
+
+      function render() {
+        const app = document.getElementById('app');
+        app.innerHTML = '';
+
+        let total = 0,
+          done = 0;
+
+        data.forEach((section, i) => {
+          const card = document.createElement('div');
+          card.className = 'card';
+
+          const title = document.createElement('h2');
+          title.innerText = section.title;
+          card.appendChild(title);
+
+          section.tasks.forEach((task, j) => {
+            const key = `${i}-${j}`;
+            if (!state[key]) state[key] = false;
+
+            total++;
+            if (state[key]) done++;
+
+            const item = document.createElement('div');
+            item.className = 'todo-item';
+
+            const left = document.createElement('div');
+            left.className = 'left';
+
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.checked = state[key];
+            cb.onchange = () => {
+              state[key] = cb.checked;
+              save();
+              render();
+            };
+
+            const text = document.createElement('span');
+            text.innerText = task;
+            if (state[key]) text.classList.add('completed');
+
+            left.appendChild(cb);
+            left.appendChild(text);
+
+            const actions = document.createElement('div');
+            actions.className = 'actions';
+
+            const editBtn = document.createElement('button');
+            editBtn.innerText = '✏️';
+            editBtn.onclick = () => {
+              const newText = prompt('Edit task', task);
+              if (newText) {
+                data[i].tasks[j] = newText;
+                save();
+                render();
+              }
+            };
+
+            const delBtn = document.createElement('button');
+            delBtn.innerText = '🗑️';
+            delBtn.onclick = () => {
+              data[i].tasks.splice(j, 1);
+              save();
+              render();
+            };
+
+            actions.appendChild(editBtn);
+            actions.appendChild(delBtn);
+
+            item.appendChild(left);
+            item.appendChild(actions);
+
+            card.appendChild(item);
+          });
+
+          app.appendChild(card);
+        });
+
+        const percent = total ? Math.round((done / total) * 100) : 0;
+        document.getElementById('progressFill').style.width = percent + '%';
+        document.getElementById('progressText').innerText =
+          percent + '% selesai';
+      }
+
+      function addTask() {
+        const sectionInput = document.getElementById('sectionInput').value;
+        const taskInput = document.getElementById('taskInput').value;
+
+        if (!sectionInput || !taskInput) return;
+
+        let section = data.find((s) => s.title === sectionInput);
+        if (!section) {
+          section = { title: sectionInput, tasks: [] };
+          data.push(section);
+        }
+
+        section.tasks.push(taskInput);
+
+        document.getElementById('taskInput').value = '';
+        save();
+        render();
+      }
+
+      render();
+    </script>
+  </body>
+</html>
