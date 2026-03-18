@@ -150,6 +150,13 @@
         text-align: center;
         margin-top: 10px;
       }
+
+      .stats {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 14px;
+        color: var(--muted);
+      }
     </style>
   </head>
 
@@ -157,7 +164,7 @@
     <div class="sidebar">
       <h2>Tambah Task</h2>
 
-      <select id="sectionSelect"></select>
+      <select id="sectionSelect" onchange="lockSectionInput()"></select>
 
       <input id="newSectionInput" placeholder="Atau buat section baru" />
 
@@ -188,6 +195,11 @@
         </div>
         <div class="progress-text" id="progressText">0%</div>
       </div>
+
+      <div class="stats">
+        <p id="todayDone">Task selesai hari ini: 0</p>
+        <p id="streak">Streak: 0 hari</p>
+      </div>
     </div>
 
     <script>
@@ -197,9 +209,35 @@
 
       let state = JSON.parse(localStorage.getItem('state')) || {};
 
+      let stats = JSON.parse(localStorage.getItem('stats')) || {
+        today: 0,
+        date: null,
+        streak: 0,
+      };
+
       function save() {
         localStorage.setItem('data', JSON.stringify(data));
         localStorage.setItem('state', JSON.stringify(state));
+        localStorage.setItem('stats', JSON.stringify(stats));
+      }
+
+      function todayKey() {
+        return new Date().toDateString();
+      }
+
+      function updateStats() {
+        if (stats.date !== todayKey()) {
+          if (stats.today > 0) stats.streak++;
+          else stats.streak = 0;
+          stats.today = 0;
+          stats.date = todayKey();
+        }
+      }
+
+      function lockSectionInput() {
+        const select = document.getElementById('sectionSelect').value;
+        const input = document.getElementById('newSectionInput');
+        input.disabled = !!select;
       }
 
       function populateSectionSelect() {
@@ -215,6 +253,7 @@
       }
 
       function render() {
+        updateStats();
         populateSectionSelect();
 
         const app = document.getElementById('app');
@@ -227,9 +266,44 @@
           const card = document.createElement('div');
           card.className = 'card';
 
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.justifyContent = 'space-between';
+          header.style.alignItems = 'center';
+
           const title = document.createElement('h2');
           title.innerText = section.title;
-          card.appendChild(title);
+
+          const actionsTop = document.createElement('div');
+
+          const renameBtn = document.createElement('button');
+          renameBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
+          renameBtn.onclick = () => {
+            const newName = prompt('Rename section', section.title);
+            if (newName) {
+              section.title = newName;
+              save();
+              render();
+            }
+          };
+
+          const delBtn = document.createElement('button');
+          delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+          delBtn.onclick = () => {
+            if (confirm('Hapus section ini?')) {
+              data.splice(i, 1);
+              state = {}; // reset state biar tidak kacau
+              save();
+              render();
+            }
+          };
+
+          actionsTop.appendChild(renameBtn);
+          actionsTop.appendChild(delBtn);
+
+          header.appendChild(title);
+          header.appendChild(actionsTop);
+          card.appendChild(header);
 
           section.tasks.forEach((task, j) => {
             const key = `${i}-${j}`;
@@ -249,6 +323,8 @@
             cb.checked = state[key];
             cb.onchange = () => {
               state[key] = cb.checked;
+              if (cb.checked) stats.today++;
+              else stats.today--;
               save();
               render();
             };
@@ -274,16 +350,16 @@
               }
             };
 
-            const delBtn = document.createElement('button');
-            delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
-            delBtn.onclick = () => {
+            const delBtn2 = document.createElement('button');
+            delBtn2.innerHTML = '<i class="fa-solid fa-trash"></i>';
+            delBtn2.onclick = () => {
               data[i].tasks.splice(j, 1);
               save();
               render();
             };
 
             actions.appendChild(editBtn);
-            actions.appendChild(delBtn);
+            actions.appendChild(delBtn2);
 
             item.appendChild(left);
             item.appendChild(actions);
@@ -298,6 +374,11 @@
         document.getElementById('progressFill').style.width = percent + '%';
         document.getElementById('progressText').innerText =
           percent + '% selesai';
+
+        document.getElementById('todayDone').innerText =
+          'Task selesai hari ini: ' + stats.today;
+        document.getElementById('streak').innerText =
+          'Streak: ' + stats.streak + ' hari';
       }
 
       function addTask() {
