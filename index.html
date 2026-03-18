@@ -9,6 +9,10 @@
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
       rel="stylesheet"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
 
     <style>
       :root {
@@ -57,6 +61,7 @@
       }
 
       .sidebar input,
+      .sidebar select,
       .sidebar button {
         width: 100%;
         margin-bottom: 10px;
@@ -116,7 +121,7 @@
       }
 
       .actions button {
-        margin-left: 5px;
+        margin-left: 8px;
         background: none;
         border: none;
         color: var(--muted);
@@ -151,9 +156,16 @@
   <body>
     <div class="sidebar">
       <h2>Tambah Task</h2>
-      <input id="sectionInput" placeholder="Nama section" />
+
+      <select id="sectionSelect"></select>
+
+      <input id="newSectionInput" placeholder="Atau buat section baru" />
+
       <input id="taskInput" placeholder="Nama task" />
-      <button onclick="addTask()">Tambah</button>
+
+      <button onclick="addTask()">
+        <i class="fa-solid fa-plus"></i> Tambah
+      </button>
     </div>
 
     <div class="container">
@@ -164,10 +176,10 @@
           style="color: var(--accent); text-decoration: none"
           href="https://carisolusi.biz.id"
           target="_blank"
-          rel="noopener noreferrer"
           >CariSolusi.biz.id</a
         >
       </h2>
+
       <div id="app"></div>
 
       <div class="progress-container">
@@ -190,7 +202,21 @@
         localStorage.setItem('state', JSON.stringify(state));
       }
 
+      function populateSectionSelect() {
+        const select = document.getElementById('sectionSelect');
+        select.innerHTML = '<option value="">Pilih Section</option>';
+
+        data.forEach((sec) => {
+          const opt = document.createElement('option');
+          opt.value = sec.title;
+          opt.innerText = sec.title;
+          select.appendChild(opt);
+        });
+      }
+
       function render() {
+        populateSectionSelect();
+
         const app = document.getElementById('app');
         app.innerHTML = '';
 
@@ -238,7 +264,7 @@
             actions.className = 'actions';
 
             const editBtn = document.createElement('button');
-            editBtn.innerText = '✏️';
+            editBtn.innerHTML = '<i class="fa-solid fa-pen"></i>';
             editBtn.onclick = () => {
               const newText = prompt('Edit task', task);
               if (newText) {
@@ -249,7 +275,7 @@
             };
 
             const delBtn = document.createElement('button');
-            delBtn.innerText = '🗑️';
+            delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
             delBtn.onclick = () => {
               data[i].tasks.splice(j, 1);
               save();
@@ -275,20 +301,26 @@
       }
 
       function addTask() {
-        const sectionInput = document.getElementById('sectionInput').value;
+        const selectedSection = document.getElementById('sectionSelect').value;
+        const newSection = document.getElementById('newSectionInput').value;
         const taskInput = document.getElementById('taskInput').value;
 
-        if (!sectionInput || !taskInput) return;
+        if (!taskInput) return;
 
-        let section = data.find((s) => s.title === sectionInput);
+        let sectionName = selectedSection || newSection;
+        if (!sectionName) return;
+
+        let section = data.find((s) => s.title === sectionName);
         if (!section) {
-          section = { title: sectionInput, tasks: [] };
+          section = { title: sectionName, tasks: [] };
           data.push(section);
         }
 
         section.tasks.push(taskInput);
 
         document.getElementById('taskInput').value = '';
+        document.getElementById('newSectionInput').value = '';
+
         save();
         render();
       }
